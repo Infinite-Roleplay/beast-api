@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
+import ResponsesUtil from "../utils/responses.util";
 import service from "../services/accessesCategories.service";
 
 const router: Router = Router();
@@ -9,9 +10,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
     try {
         const result = await service.getAccessesCategories(options);
         res.status(result.status || 200).send(result.data);
-    } catch(err) {
-        res.status(500).send({ error: err || 'Something went wrong 😕'});
-    }
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 
 router.get('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -19,12 +18,21 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction): Prom
         "id": req.params.id,
     };
 
+    if(!options.id.match(/^[0-9]+$/)) return ResponsesUtil.invalidParameters(res);
+
     try {
         const result = await service.getId(options);
         res.status(result.status || 200).send(result.data);
-    } catch(err) {
-        res.status(500).send({ error: err || 'Something went wrong 😕'});
-    }
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
+
+/***************************************************************
+* NOT ALLOWED METHODS HANDLING
+***************************************************************/
+
+router.all('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => ResponsesUtil.methodNotAllowed(res));
+router.all('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => ResponsesUtil.methodNotAllowed(res));
+
+/**************************************************************/
 
 export default router;
