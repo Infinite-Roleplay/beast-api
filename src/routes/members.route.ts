@@ -12,24 +12,29 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
 
     try {
         const result = await service.getMembers(options);
-        res.status(result.status || 200).send(result.data);
-    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
+    } catch(err) { 
+        console.log(err)
+        return ResponsesUtil.somethingWentWrong(res)
+    }
 });
 
 router.post('/find', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
 
     let options = {
-        "discordId": req.query.discordId,
-        "steamId64": req.query.steamId64,
+        "discordId": req.body.discordId,
+        "steamId64": req.body.steamId64,
     };
 
-    if(!options.discordId?.toString().match(/^[0-9]{18}$/)
-    || !options.steamId64?.toString().match(/^[0-9]{17}$/)) return ResponsesUtil.invalidParameters(res);
+    if((options.discordId && !options.discordId.match(/^[0-9]{18}$/))
+    || (options.steamId64 && !options.steamId64.match(/^[0-9]{17}$/))) return ResponsesUtil.invalidParameters(res);
 
     try {
-        const result = await service.postFind(options);
-        res.status(result.status || 200).send(result.data);
+        const result = await service.find(options);
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 
@@ -43,8 +48,10 @@ router.get('/:uuid', async (req: Request, res: Response, next: NextFunction): Pr
     if(!options.uuid.match(/^[0-9(a-f|A-F)]{8}-[0-9(a-f|A-F)]{4}-4[0-9(a-f|A-F)]{3}-[89ab][0-9(a-f|A-F)]{3}-[0-9(a-f|A-F)]{12}$/)) return ResponsesUtil.invalidParameters(res);
 
     try {
-        const result = await service.getUuid(options);
-        res.status(result.status || 200).send(result.data);
+        const result = await service.get(options);
+        if(!result) ResponsesUtil.notFound(res);
+
+        else res.status(200).json({data: result});
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 

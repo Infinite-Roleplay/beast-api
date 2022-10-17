@@ -6,7 +6,7 @@ export default class ResponsesUtil {
     }
 
     static methodNotAllowed(res: Response): void {
-        res.status(405).send({ error: 'Method Not Allowed 🤫'});
+        res.status(405).send({ error: 'Method Not Allowed 💃'});
     }
 
     static invalidParameters(res: Response): void {
@@ -15,5 +15,9 @@ export default class ResponsesUtil {
 
     static somethingWentWrong(res: Response): void {
         res.status(500).send({ error: 'Something went wrong 😕'});
+    }
+    
+    static notFound(res: Response): void {
+        res.status(404).send({ error: 'We don\'t found what you are looking for 😔'});
     }
 }

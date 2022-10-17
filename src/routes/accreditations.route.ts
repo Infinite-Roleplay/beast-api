@@ -9,7 +9,8 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
 
     try {
         const result = await service.getAccreditations(options);
-        res.status(result.status || 200).send(result.data);
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 
@@ -21,8 +22,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction): Prom
     if(!options.id.match(/^[0-9]+$/)) return ResponsesUtil.invalidParameters(res);
 
     try {
-        const result = await service.getId(options);
-        res.status(result.status || 200).send(result.data);
+        const result = await service.get(options);
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 

@@ -5,7 +5,10 @@ import RouterUtil from "./utils/routes.util";
 import DatabaseUtil from "./utils/database.util";
 import cookieParser from "cookie-parser";
 import { sha512 } from "js-sha512";
+import ResponsesUtil from "./utils/responses.util";
+import multer from "multer";
 
+const upload = multer();
 const app = express();
 
 app.set("port", process.env.SERVER_PORT);
@@ -14,6 +17,9 @@ app.set("env", process.env.NODE_ENV);
 app.use(cors());
 app.use(express.json());
 app.use(express.text());
+app.use(express.urlencoded({extended: true}));
+app.use(upload.array("data"));
+app.use(express.static('public'));
 app.use(cookieParser());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -25,15 +31,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 RouterUtil.init(app);
 
 app.get('/', (req: Request, res: Response, next: NextFunction) => {
-    res.status(418).send({status: "Welcome to our infinite world newbie ♾️"});
+    res.status(200).send({status: "Welcome to our infinite world newbie ♾️"});
 });
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-    res.status(404).send({status: 'Not found 😞'});
+    ResponsesUtil.notFound(res);
 });
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    res.status(err.status || 500).send({status: err.status, error: err.error || err.message});
+    ResponsesUtil.somethingWentWrong(res);
 });
 
 app.listen(process.env.SERVER_PORT, () => {
