@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import { sha512 } from "js-sha512";
 import ResponsesUtil from "./utils/responses.util";
 import multer from "multer";
+import ActorsUtil from "./utils/actors.util";
 
 const upload = multer();
 const app = express();
@@ -22,9 +23,17 @@ app.use(upload.array("data"));
 app.use(express.static('public'));
 app.use(cookieParser());
 
-app.use((req: Request, res: Response, next: NextFunction) => {
+app.use(async (req: Request, res: Response, next: NextFunction) => {
     const key: any = req.headers["api-key"];
     if(key) req.headers["api-key"] = sha512(key);
+
+    if(!await ActorsUtil.isAuthorized(key)){
+        if(!ActorsUtil.requesters[req.ip]) ActorsUtil.requesters[req.ip] = 0;
+        ActorsUtil.requesters[req.ip]++;
+        setTimeout(() => ActorsUtil.requesters[req.ip]--, 60*1000);
+        if(ActorsUtil.requesters[req.ip] > 200) return ResponsesUtil.tooManyRequest(res);
+    }
+
     next();
 });
 

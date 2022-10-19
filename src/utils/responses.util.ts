@@ -20,4 +20,8 @@ export default class ResponsesUtil {
     static notFound(res: Response): void {
         res.status(404).send({error: 'We don\'t found what you are looking for 😔'});
     }
+
+    static tooManyRequest(res: Response): void {
+        res.status(429).send({error: 'Patience is a virtue that is becoming increasingly rare 🧘'});
+    }
 }

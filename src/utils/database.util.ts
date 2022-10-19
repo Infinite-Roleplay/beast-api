@@ -12,7 +12,7 @@ export default class DatabaseUtil {
         database: "infinite",
     });
 
-    static async query(request: string, values: string[]): Promise<any> {
+    static async query(request: string, values: (string|null)[]): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.pool.query(request, values, (err: MysqlError | null, res: any, fields: FieldInfo[] | undefined) => {
                 if(err) reject(err.message);
