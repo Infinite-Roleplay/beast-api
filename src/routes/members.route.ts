@@ -55,6 +55,25 @@ router.get('/:uuid', async (req: Request, res: Response, next: NextFunction): Pr
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 
+router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
+    let options = {
+        "discordId": req.body.discordId,
+        "steamId64": req.body.steamId64,
+    };
+
+    if((options.discordId && !options.discordId.match(/^[0-9]{18}$/))
+    || (options.steamId64 && !options.steamId64.match(/^[0-9]{17}$/))) return ResponsesUtil.invalidParameters(res);
+
+    if(!options.discordId && !options.steamId64) return ResponsesUtil.invalidParameters(res);
+
+    try {
+        const result = await service.post(options.discordId, options.steamId64);
+        res.status(200).json({success: result ? "true" : "false"});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
+});
+
 /***************************************************************
 * NOT ALLOWED METHODS HANDLING
 ***************************************************************/
