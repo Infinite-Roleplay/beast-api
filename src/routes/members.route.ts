@@ -1,44 +1,115 @@
 import { Router, Request, Response, NextFunction } from "express";
+import ResponsesUtil from "../utils/responses.util";
 import service from "../services/members.service";
+import ActorsUtil from "../utils/actors.util";
+import BranchesService from "../services/branches.service";
 
 const router: Router = Router();
 
 router.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
     let options = {};
 
     try {
         const result = await service.getMembers(options);
-        res.status(result.status || 200).send(result.data);
-    } catch(err) {
-        res.status(500).send({ error: err || 'Something went wrong 😕'});
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
+    } catch(err) { 
+        console.log(err)
+        return ResponsesUtil.somethingWentWrong(res)
     }
 });
 
 router.post('/find', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
     let options = {
-        "discordId": req.query.discordId,
-        "steamId64": req.query.steamId64,
+        "discordId": req.body.discordId,
+        "steamId64": req.body.steamId64,
     };
 
+    if((options.discordId && !options.discordId.match(/^[0-9]{18}$/))
+    || (options.steamId64 && !options.steamId64.match(/^[0-9]{17}$/))) return ResponsesUtil.invalidParameters(res);
+
     try {
-        const result = await service.postFind(options);
-        res.status(result.status || 200).send(result.data);
-    } catch(err) {
-        res.status(500).send({ error: err || 'Something went wrong 😕'});
-    }
+        const result = await service.find(options);
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 
 router.get('/:uuid', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
     let options = {
         "uuid": req.params.uuid,
     };
 
+    if(!options.uuid.match(/^[0-9(a-f|A-F)]{8}-[0-9(a-f|A-F)]{4}-4[0-9(a-f|A-F)]{3}-[89ab][0-9(a-f|A-F)]{3}-[0-9(a-f|A-F)]{12}$/)) return ResponsesUtil.invalidParameters(res);
+
     try {
-        const result = await service.getUuid(options);
-        res.status(result.status || 200).send(result.data);
-    } catch(err) {
-        res.status(500).send({ error: err || 'Something went wrong 😕'});
-    }
+        const result = await service.get(options);
+        if(!result) ResponsesUtil.notFound(res);
+
+        else res.status(200).json({data: result});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
+
+router.get('/:uuid/name/:on?', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
+    let options = {
+        "uuid": req.params.uuid,
+        "on": req.params.on,
+    };
+
+    if(!options.uuid.match(/^[0-9(a-f|A-F)]{8}-[0-9(a-f|A-F)]{4}-4[0-9(a-f|A-F)]{3}-[89ab][0-9(a-f|A-F)]{3}-[0-9(a-f|A-F)]{12}$/)) return ResponsesUtil.invalidParameters(res);
+    if(options.on && !options.on.match(/^[0-9]{19}$/)) return ResponsesUtil.invalidParameters(res);
+
+    try {
+        const resultMember = await service.get(options);
+        if(!resultMember) ResponsesUtil.notFound(res);
+        let accesses = resultMember?.accesses;
+
+        if(options.on && accesses){
+            accesses = accesses?.filter(a => a.roles.map(ar => ar.on?.discordServerId).includes(options.on));
+        }
+
+        accesses?.sort((a, b) => (b.accreditation?.value || 0) - (a.accreditation?.value || 0));
+        const result = `${accesses?.at(0)?.prefix || ""} ${resultMember?.rpname} ${accesses?.at(0)?.suffix || ""}`.trim();
+
+        res.status(200).json({data: result});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
+});
+
+router.post('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
+    let options = {
+        "discordId": req.body.discordId,
+        "steamId64": req.body.steamId64,
+    };
+
+    if((options.discordId && !options.discordId.match(/^[0-9]{18}$/))
+    || (options.steamId64 && !options.steamId64.match(/^[0-9]{17}$/))) return ResponsesUtil.invalidParameters(res);
+
+    if(!options.discordId && !options.steamId64) return ResponsesUtil.invalidParameters(res);
+
+    try {
+        const result = await service.post(options.discordId, options.steamId64);
+        res.status(200).json({success: result ? "true" : "false"});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
+});
+
+/***************************************************************
+* NOT ALLOWED METHODS HANDLING
+***************************************************************/
+
+router.all('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => ResponsesUtil.methodNotAllowed(res));
+router.all('/find', async (req: Request, res: Response, next: NextFunction): Promise<void> => ResponsesUtil.methodNotAllowed(res));
+router.all('/:uuid', async (req: Request, res: Response, next: NextFunction): Promise<void> => ResponsesUtil.methodNotAllowed(res));
+
+/**************************************************************/
 
 export default router;

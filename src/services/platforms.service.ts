@@ -1,22 +1,33 @@
+import DatabaseUtil from "../utils/database.util";
 import { IPlatform } from "../utils/interfaces/models/platform.model";
-import { IResponse } from "../utils/interfaces/response.interface";
 
-export default {
-    getPlatforms: async (options: any): Promise<IResponse> => {
-        const data: IPlatform[] = [{
-            "id": "<Id>",
-            "label": "<string>",
-        }];
+export default class PlatformsService {
+    static async getPlatforms(options: any): Promise<null | IPlatform[]> {
+        let data: IPlatform[] = [];
 
-        return { data: data };
-    },
+        const queryResult = await DatabaseUtil.query("SELECT * FROM platforms", []).catch(() => data);
 
-    getId: async (options: any): Promise<IResponse> => {
-        const data: IPlatform = {
-            "id": "<Id>",
-            "label": "<string>",
+        data = await Promise.all(queryResult.map(async (res: any) => ({
+            id: res["id"],
+            label: res["label"]
+        })));
+
+        return data;
+    }
+
+    static async get(options: any): Promise<null | IPlatform> {
+        let data: null | IPlatform = null;
+
+        const queryResult = await DatabaseUtil.query("SELECT * FROM platforms WHERE id=? LIMIT 1", [options.id]).catch(() => data);
+        if(!queryResult) return data;
+        const res = queryResult[0];
+        if(!res) return data;
+
+        data = {
+            id: res["id"],
+            label: res["label"]
         };
 
-        return { data: data };
-    },
+        return data;
+    }
 };

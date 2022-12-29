@@ -8,6 +8,9 @@ import PlatformsRouter from "../routes/platforms.route";
 import PunishmentsRouter from "../routes/punishments.route";
 import RanksRouter from "../routes/ranks.route";
 import SubscriptionsRouter from "../routes/subscriptions.route";
+import FormatterRouter from "../routes/formatter.route";
+import AuthorizationRouter from "../routes/authorization.route";
+import VerificationRouter from "../routes/verification.route";
 
 export default class RouterUtil {
     static init(app: Express): void {
@@ -20,5 +23,8 @@ export default class RouterUtil {
         app.use('/punishments', PunishmentsRouter);
         app.use('/ranks', RanksRouter);
         app.use('/subscriptions', SubscriptionsRouter);
+        app.use('/format', FormatterRouter);
+        app.use('/authorization', AuthorizationRouter);
+        app.use('/verify', VerificationRouter);
     }
 };

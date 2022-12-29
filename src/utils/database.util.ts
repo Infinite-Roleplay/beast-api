@@ -1,16 +1,23 @@
 require("dotenv").config();
-import mysql from 'mysql';
+import mysql, { FieldInfo, MysqlError } from 'mysql';
 
 export default class DatabaseUtil {
-    static get pool(): mysql.Pool {
-        return mysql.createPool({
-            connectionLimit : 10,
-            debug: false,
-            password: process.env.DB_PASSWORD,
-            host: "127.0.0.1",
-            user: "beast",
-            port: 3306,
-            database: "infinite",
+    static pool: mysql.Pool = mysql.createPool({
+        connectionLimit : 100,
+        debug: false,
+        password: process.env.DB_PASSWORD,
+        host: "127.0.0.1",
+        user: "beast",
+        port: 3306,
+        database: "infinite",
+    });
+
+    static async query(request: string, values: (string|null)[]): Promise<any> {
+        return new Promise<any>((resolve, reject) => {
+            this.pool.query(request, values, (err: MysqlError | null, res: any, fields: FieldInfo[] | undefined) => {
+                if(err) reject(err.message);
+                else resolve(res);
+            })
         });
     }
 }

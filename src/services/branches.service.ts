@@ -1,26 +1,56 @@
+import DatabaseUtil from "../utils/database.util";
 import { IBranch } from "../utils/interfaces/models/branch.model";
-import { IResponse } from "../utils/interfaces/response.interface";
+import MembersService from "./members.service";
 
-export default {
-    getBranches: async (options: any): Promise<IResponse> => {
-        const data: IBranch[] = [{
-            "director": "<string>",
-            "discord_id": "<string>",
-            "id": "<Id>",
-            "label": "<string>",
-        }];
+export default class BranchesService {
+    static async getBranches(options: any): Promise<null | IBranch[]> {
+        let data: IBranch[] = [];
 
-        return { data: data };
-    },
+        const queryResult = await DatabaseUtil.query("SELECT * FROM branches", []).catch(() => data);
 
-    getId: async (options: any): Promise<IResponse> => {
-        const data: IBranch = {
-            "director": "<string>",
-            "discord_id": "<string>",
-            "id": "<Id>",
-            "label": "<string>",
+        data = await Promise.all(queryResult.map(async (res: any) => ({
+            id: res["id"],
+            label: res["label"],
+            discordServerId: res["discord_id"],
+            director: await MembersService.get({uuid: res["director"]})
+        })));
+
+        return data;
+    }
+
+    static async find(options: any): Promise<null | IBranch> {
+        let data: null | IBranch = null;
+
+        const queryResult = await DatabaseUtil.query("SELECT * FROM branches WHERE discord_id=? LIMIT 1", [options.discordServerId]).catch(() => data);
+        if(!queryResult) return data;
+        const res = queryResult[0];
+        if(!res) return data;
+
+        data = {
+            id: res["id"],
+            label: res["label"],
+            discordServerId: res["discord_id"],
+            director: await MembersService.get({uuid: res["director"]})
         };
 
-        return { data: data };
-    },
+        return data;
+    }
+
+    static async get(options: any): Promise<null | IBranch> {
+        let data: null | IBranch = null;
+
+        const queryResult = await DatabaseUtil.query("SELECT * FROM branches WHERE id=? LIMIT 1", [options.id]).catch(() => data);
+        if(!queryResult) return data;
+        const res = queryResult[0];
+        if(!res) return data;
+
+        data = {
+            id: res["id"],
+            label: res["label"],
+            discordServerId: res["discord_id"],
+            director: await MembersService.get({uuid: res["director"]})
+        };
+
+        return data;
+    }
 };

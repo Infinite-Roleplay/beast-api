@@ -1,28 +1,40 @@
+import DatabaseUtil from "../utils/database.util";
 import { ISubscription } from "../utils/interfaces/models/subscription.model";
-import { IResponse } from "../utils/interfaces/response.interface";
+import MembersService from "./members.service";
 
-export default {
-    getSubscriptions: async (options: any): Promise<IResponse> => {
-        const data: ISubscription[] = [{
-            "id": "<Id>",
-            "member_uuid": "<UUID>",
-            "start_at": "<string>",
-            "end_at": "<string>",
-            "type": "<integer>",
-        }];
+export default class SubscriptionsService {
+    static async getSubscriptions(options: any): Promise<null | ISubscription[]> {
+        let data: ISubscription[] = [];
 
-        return { data: data };
-    },
+        const queryResult = await DatabaseUtil.query("SELECT * FROM subscriptions", []).catch(() => data);
 
-    getId: async (options: any): Promise<IResponse> => {
-        const data: ISubscription = {
-            "id": "<Id>",
-            "member_uuid": "<UUID>",
-            "start_at": "<string>",
-            "end_at": "<string>",
-            "type": "<integer>",
+        data = await Promise.all(queryResult.map(async (res: any) => ({
+            id: res["id"],
+            member: await MembersService.get({uuid: res["member_uuid"]}),
+            startAt: res["start_at"],
+            endAt: res["end_at"],
+            type: res["type"]
+        })))
+
+        return data;
+    }
+
+    static async get(options: any): Promise<null | ISubscription> {
+        let data: null | ISubscription = null;
+
+        const queryResult = await DatabaseUtil.query("SELECT * FROM subscriptions WHERE id=? LIMIT 1", [options.id]).catch(() => data);
+        if(!queryResult) return data;
+        const res = queryResult[0];
+        if(!res) return data;
+
+        data = {
+            id: res["id"],
+            member: await MembersService.get({uuid: res["member_uuid"]}),
+            startAt: res["start_at"],
+            endAt: res["end_at"],
+            type: res["type"]
         };
 
-        return { data: data };
-    },
+        return data;
+    }
 };
