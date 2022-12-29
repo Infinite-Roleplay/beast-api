@@ -1,7 +1,13 @@
 import { IAccessesCategory } from "./accessesCategory.model";
 import { IAccreditation } from "./accreditation.model";
+import { IBranch } from "./branch.model";
 
 type color = [number, number, number];
+
+export interface IRole {
+    id: string;
+    on: IBranch | null;
+}
 
 export interface IAccess {
     id: number;
@@ -12,4 +18,7 @@ export interface IAccess {
     description?: string;
     emoji: string;
     playermodels: string[];
+    roles: IRole[];
+    prefix?: string;
+    suffix?: string;
 }

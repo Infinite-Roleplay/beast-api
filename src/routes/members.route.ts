@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import ResponsesUtil from "../utils/responses.util";
 import service from "../services/members.service";
 import ActorsUtil from "../utils/actors.util";
+import BranchesService from "../services/branches.service";
 
 const router: Router = Router();
 
@@ -52,6 +53,33 @@ router.get('/:uuid', async (req: Request, res: Response, next: NextFunction): Pr
         if(!result) ResponsesUtil.notFound(res);
 
         else res.status(200).json({data: result});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
+});
+
+router.get('/:uuid/name/:on?', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    if(!await ActorsUtil.isAuthorized(req.headers["api-key"])) return ResponsesUtil.unauthorizedAction(res);
+
+    let options = {
+        "uuid": req.params.uuid,
+        "on": req.params.on,
+    };
+
+    if(!options.uuid.match(/^[0-9(a-f|A-F)]{8}-[0-9(a-f|A-F)]{4}-4[0-9(a-f|A-F)]{3}-[89ab][0-9(a-f|A-F)]{3}-[0-9(a-f|A-F)]{12}$/)) return ResponsesUtil.invalidParameters(res);
+    if(options.on && !options.on.match(/^[0-9]{19}$/)) return ResponsesUtil.invalidParameters(res);
+
+    try {
+        const resultMember = await service.get(options);
+        if(!resultMember) ResponsesUtil.notFound(res);
+        let accesses = resultMember?.accesses;
+
+        if(options.on && accesses){
+            accesses = accesses?.filter(a => a.roles.map(ar => ar.on?.discordServerId).includes(options.on));
+        }
+
+        accesses?.sort((a, b) => (b.accreditation?.value || 0) - (a.accreditation?.value || 0));
+        const result = `${accesses?.at(0)?.prefix || ""} ${resultMember?.rpname} ${accesses?.at(0)?.suffix || ""}`.trim();
+
+        res.status(200).json({data: result});
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 

@@ -28,6 +28,20 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction): Prom
     } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
 });
 
+router.post('/find', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    let options = {
+        "discordServerId": req.body.discordServerId
+    };
+
+    if(options.discordServerId && !options.discordServerId.match(/^[0-9]{19}$/)) return ResponsesUtil.invalidParameters(res);
+
+    try {
+        const result = await service.find(options);
+        if(!result) ResponsesUtil.notFound(res);
+        else res.status(200).json({data: result});
+    } catch(err) { return ResponsesUtil.somethingWentWrong(res) }
+});
+
 /***************************************************************
 * NOT ALLOWED METHODS HANDLING
 ***************************************************************/
